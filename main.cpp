@@ -86,7 +86,7 @@ int main()
             break;
         case 5:
             saveData();
-            cout << "\n✓ Data saved successfully!\n";
+            cout << "\n Data saved successfully!\n";
             pauseScreen();
             break;
         case 0:
@@ -97,7 +97,7 @@ int main()
             cout << "+==========================================+\n";
             break;
         default:
-            cout << "\n✗ Invalid choice! Please try again.\n";
+            cout << "\n Invalid choice! Please try again.\n";
             pauseScreen();
         }
     } while (choice != 0);
@@ -453,6 +453,51 @@ void deleteMember()
     {
         member->display();
 
+        // Check if member has active loans
+        bool hasActiveLoans = false;
+        int activeLoanCount = 0;
+        double totalOutstanding = 0.0;
+
+        for (const auto &loan : loans)
+        {
+            if (loan.getMemberID() == id && loan.getStatus() == "Active")
+            {
+                hasActiveLoans = true;
+                activeLoanCount++;
+                totalOutstanding += loan.getRemainingBalance();
+            }
+        }
+
+        // Check if member has savings
+        if (member->getTotalSavings() > 0)
+        {
+            cout << "\n+============================================================+\n";
+            cout << "|                    DELETION BLOCKED                        |\n";
+            cout << "+============================================================+\n";
+            cout << "\n Cannot delete member! Member has savings balance.\n";
+            cout << " Current Savings: $" << fixed << setprecision(2)
+                 << member->getTotalSavings() << "\n\n";
+            cout << " Please withdraw all savings before deleting the member.\n";
+            pauseScreen();
+            return;
+        }
+
+        // Check if member has active loans
+        if (hasActiveLoans)
+        {
+            cout << "\n+============================================================+\n";
+            cout << "|                    DELETION BLOCKED                        |\n";
+            cout << "+============================================================+\n";
+            cout << "\n Cannot delete member! Member has active loans.\n";
+            cout << " Active Loans: " << activeLoanCount << "\n";
+            cout << " Total Outstanding: $" << fixed << setprecision(2)
+                 << totalOutstanding << "\n\n";
+            cout << " Please clear all active loans before deleting the member.\n";
+            pauseScreen();
+            return;
+        }
+
+        // If no active loans or savings, proceed with deletion
         cout << "\nAre you sure you want to delete this member? (Y/N): ";
         char confirm;
         cin >> confirm;
@@ -474,7 +519,7 @@ void deleteMember()
     pauseScreen();
 }
 
-// ==================== LOAN FUNCTIONS ====================
+//  LOAN FUNCTIONS
 void issueLoan()
 {
     clearScreen();
@@ -641,7 +686,7 @@ void viewLoansByMember()
     pauseScreen();
 }
 
-// ==================== SAVINGS FUNCTIONS ====================
+//  SAVINGS FUNCTIONS
 void depositSavings()
 {
     clearScreen();
@@ -732,7 +777,7 @@ void viewSavingsHistory()
     Member *member = findMemberByID(memberID);
     if (!member || !member->getIsActive())
     {
-        cout << "\n✗ Member not found!\n";
+        cout << "\n Member not found!\n";
     }
     else
     {
@@ -741,7 +786,7 @@ void viewSavingsHistory()
     pauseScreen();
 }
 
-// ==================== REPORT FUNCTIONS ====================
+//  REPORT FUNCTIONS
 void activeLoanReport()
 {
     clearScreen();
@@ -860,7 +905,7 @@ void summaryReport()
     pauseScreen();
 }
 
-// ==================== FILE HANDLING ====================
+// FILE HANDLING
 void loadData()
 {
     // Load members

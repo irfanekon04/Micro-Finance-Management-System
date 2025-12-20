@@ -34,7 +34,7 @@ void Loan::setStatus(string s) { status = s; }
 // Operations
 void Loan::calculateTotalPayable()
 {
-    // Simple interest calculation
+    // interest calculation
     double interest = loanAmount * (interestRate / 100.0) * (durationMonths / 12.0);
     totalPayable = loanAmount + interest;
     remainingBalance = totalPayable - paidAmount;
