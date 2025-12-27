@@ -32,9 +32,10 @@ void reportsMenu();
 // Member functions
 void addMember();
 void viewAllMembers();
+void viewInactiveMembers();
 void searchMember();
 void editMember();
-void deleteMember();
+void toggleMemberStatus();
 
 // Loan functions
 void issueLoan();
@@ -56,11 +57,30 @@ void summaryReport();
 int generateMemberID();
 int generateLoanID();
 Member *findMemberByID(int id);
+bool adminLogin();
 string getCurrentDate();
 
 // ==================== MAIN FUNCTION ====================
 int main()
 {
+    // Admin Authentication
+    cout << "\n+============================================================+\n";
+    cout << "|     DIGITAL MICRO-FINANCE MANAGEMENT SYSTEM                |\n";
+    cout << "|                       by                                   |\n";
+    cout << "|                 BRAINSTORMERS 4.0                          |\n";
+    cout << "+============================================================+\n";
+    cout << "|                   ADMIN LOGIN                              |\n";
+    cout << "+============================================================+\n";
+
+    if (!adminLogin())
+    {
+        cout << "\n Authentication failed. Exiting...\n";
+        return 1;
+    }
+
+    cout << "\n Login successful! Welcome, Admin.\n";
+    pauseScreen();
+
     loadData();
 
     int choice;
@@ -105,12 +125,14 @@ int main()
     return 0;
 }
 
-// ==================== MENU FUNCTIONS ====================
+//  MENU FUNCTIONS
 void displayMainMenu()
 {
     clearScreen();
     cout << "\n+============================================================+\n";
     cout << "|     DIGITAL MICRO-FINANCE MANAGEMENT SYSTEM                |\n";
+    cout << "|                       by                                   |\n";
+    cout << "|                 BRAINSTORMERS 4.0                          |\n";
     cout << "+============================================================+\n";
     cout << "|  1. Member Management                                      |\n";
     cout << "|  2. Loan Management                                        |\n";
@@ -131,10 +153,11 @@ void memberMenu()
         cout << "|                 MEMBER MANAGEMENT                          |\n";
         cout << "+============================================================+\n";
         cout << "|  1. Add New Member                                         |\n";
-        cout << "|  2. View All Members                                       |\n";
-        cout << "|  3. Search Member                                          |\n";
-        cout << "|  4. Edit Member                                            |\n";
-        cout << "|  5. Delete Member                                          |\n";
+        cout << "|  2. View Active Members                                    |\n";
+        cout << "|  3. View Inactive Members                                  |\n";
+        cout << "|  4. Search Member                                          |\n";
+        cout << "|  5. Edit Member                                            |\n";
+        cout << "|  6. Toggle Member Status (Active/Inactive)                 |\n";
         cout << "|  0. Back to Main Menu                                      |\n";
         cout << "+============================================================+\n";
         cout << "Enter your choice: ";
@@ -149,13 +172,16 @@ void memberMenu()
             viewAllMembers();
             break;
         case 3:
-            searchMember();
+            viewInactiveMembers();
             break;
         case 4:
-            editMember();
+            searchMember();
             break;
         case 5:
-            deleteMember();
+            editMember();
+            break;
+        case 6:
+            toggleMemberStatus();
             break;
         case 0:
             break;
@@ -281,7 +307,7 @@ void reportsMenu()
     } while (choice != 0);
 }
 
-// ==================== MEMBER FUNCTIONS ====================
+//  MEMBER FUNCTIONS
 void addMember()
 {
     clearScreen();
@@ -313,7 +339,7 @@ void viewAllMembers()
 {
     clearScreen();
     cout << "\n+============================================================+\n";
-    cout << "|                  ALL MEMBERS LIST                          |\n";
+    cout << "|                  ACTIVE MEMBERS LIST                       |\n";
     cout << "+============================================================+\n";
 
     if (members.empty())
@@ -322,6 +348,7 @@ void viewAllMembers()
     }
     else
     {
+        int activeCount = 0;
         cout << "\n"
              << setw(6) << "ID" << setw(25) << "Name"
              << setw(20) << "Phone" << setw(15) << "Savings\n";
@@ -336,9 +363,57 @@ void viewAllMembers()
                      << setw(20) << member.getPhone()
                      << " $" << setw(12) << fixed << setprecision(2)
                      << member.getTotalSavings() << "\n";
+                activeCount++;
             }
         }
+
+        if (activeCount == 0)
+        {
+            cout << "\nNo active members found.\n";
+        }
+        else
+        {
+            cout << "\nTotal Active Members: " << activeCount << "\n";
+        }
     }
+    pauseScreen();
+}
+
+void viewInactiveMembers()
+{
+    clearScreen();
+    cout << "\n+============================================================+\n";
+    cout << "|                 INACTIVE MEMBERS LIST                      |\n";
+    cout << "+============================================================+\n";
+
+    int inactiveCount = 0;
+    cout << "\n"
+         << setw(6) << "ID" << setw(25) << "Name"
+         << setw(20) << "Phone" << setw(15) << "Savings\n";
+    cout << string(66, '-') << "\n";
+
+    for (const auto &member : members)
+    {
+        if (!member.getIsActive())
+        {
+            cout << setw(6) << member.getMemberID()
+                 << setw(25) << member.getName()
+                 << setw(20) << member.getPhone()
+                 << " $" << setw(12) << fixed << setprecision(2)
+                 << member.getTotalSavings() << "\n";
+            inactiveCount++;
+        }
+    }
+
+    if (inactiveCount == 0)
+    {
+        cout << "\nNo inactive members found.\n";
+    }
+    else
+    {
+        cout << "\nTotal Inactive Members: " << inactiveCount << "\n";
+    }
+
     pauseScreen();
 }
 
@@ -437,11 +512,11 @@ void editMember()
     pauseScreen();
 }
 
-void deleteMember()
+void toggleMemberStatus()
 {
     clearScreen();
     cout << "\n+============================================================+\n";
-    cout << "|                  DELETE MEMBER                             |\n";
+    cout << "|              TOGGLE MEMBER STATUS                          |\n";
     cout << "+============================================================+\n";
 
     int id;
@@ -449,11 +524,21 @@ void deleteMember()
     cin >> id;
 
     Member *member = findMemberByID(id);
-    if (member && member->getIsActive())
+    if (!member)
     {
-        member->display();
+        cout << "\n Member not found!\n";
+        pauseScreen();
+        return;
+    }
 
-        // Check if member has active loans
+    member->display();
+
+    // Check current status
+    if (member->getIsActive())
+    {
+        // Trying to deactivate - check for obligations
+
+        // Check for active loans
         bool hasActiveLoans = false;
         int activeLoanCount = 0;
         double totalOutstanding = 0.0;
@@ -468,54 +553,69 @@ void deleteMember()
             }
         }
 
-        // Check if member has savings
+        // Check for savings
         if (member->getTotalSavings() > 0)
         {
             cout << "\n+============================================================+\n";
-            cout << "|                    DELETION BLOCKED                        |\n";
+            cout << "|                 DEACTIVATION BLOCKED                       |\n";
             cout << "+============================================================+\n";
-            cout << "\n Cannot delete member! Member has savings balance.\n";
+            cout << "\n Cannot deactivate member! Member has savings balance.\n";
             cout << " Current Savings: $" << fixed << setprecision(2)
                  << member->getTotalSavings() << "\n\n";
-            cout << " Please withdraw all savings before deleting the member.\n";
+            cout << " Please withdraw all savings before deactivating.\n";
             pauseScreen();
             return;
         }
 
-        // Check if member has active loans
         if (hasActiveLoans)
         {
             cout << "\n+============================================================+\n";
-            cout << "|                    DELETION BLOCKED                        |\n";
+            cout << "|                 DEACTIVATION BLOCKED                       |\n";
             cout << "+============================================================+\n";
-            cout << "\n Cannot delete member! Member has active loans.\n";
+            cout << "\n Cannot deactivate member! Member has active loans.\n";
             cout << " Active Loans: " << activeLoanCount << "\n";
             cout << " Total Outstanding: $" << fixed << setprecision(2)
                  << totalOutstanding << "\n\n";
-            cout << " Please clear all active loans before deleting the member.\n";
+            cout << " Please clear all active loans before deactivating.\n";
             pauseScreen();
             return;
         }
 
-        // If no active loans or savings, proceed with deletion
-        cout << "\nAre you sure you want to delete this member? (Y/N): ";
+        // Safe to deactivate
+        cout << "\nAre you sure you want to DEACTIVATE this member? (Y/N): ";
         char confirm;
         cin >> confirm;
 
         if (confirm == 'Y' || confirm == 'y')
         {
             member->setIsActive(false);
-            cout << "\n Member deleted successfully!\n";
+            cout << "\n Member deactivated successfully!\n";
+            cout << " Note: Member data is preserved and can be reactivated.\n";
         }
         else
         {
-            cout << "\n Deletion cancelled.\n";
+            cout << "\n Action cancelled.\n";
         }
     }
     else
     {
-        cout << "\n Member not found!\n";
+        // Member is inactive - reactivate
+        cout << "\nThis member is currently INACTIVE.\n";
+        cout << "Do you want to REACTIVATE this member? (Y/N): ";
+        char confirm;
+        cin >> confirm;
+
+        if (confirm == 'Y' || confirm == 'y')
+        {
+            member->setIsActive(true);
+            cout << "\n Member reactivated successfully!\n";
+        }
+        else
+        {
+            cout << "\n Action cancelled.\n";
+        }
     }
+
     pauseScreen();
 }
 
@@ -1040,4 +1140,42 @@ string getCurrentDate()
        << (1900 + ltm->tm_year);
 
     return ss.str();
+}
+
+bool adminLogin()
+{
+    const string ADMIN_USERNAME = "admin";
+    const string ADMIN_PASSWORD = "admin123";
+    const int MAX_ATTEMPTS = 3;
+
+    string username, password;
+    int attempts = 0;
+
+    while (attempts < MAX_ATTEMPTS)
+    {
+        cout << "\nUsername: ";
+        cin >> username;
+
+        cout << "Password: ";
+        cin >> password;
+
+        if (username == ADMIN_USERNAME && password == ADMIN_PASSWORD)
+        {
+            return true;
+        }
+
+        attempts++;
+        cout << "\n Invalid credentials! ";
+
+        if (attempts < MAX_ATTEMPTS)
+        {
+            cout << "Attempts remaining: " << (MAX_ATTEMPTS - attempts) << "\n";
+        }
+        else
+        {
+            cout << "Maximum attempts exceeded.\n";
+        }
+    }
+
+    return false;
 }
